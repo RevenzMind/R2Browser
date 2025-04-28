@@ -16,19 +16,29 @@ interface R2Config {
 }
 
 export default function Home() {
+  const [loading, setLoading] = useState(true)
   const [files, setFiles] = useState<any[]>([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
 
   const fetchFiles = async () => {
+    setLoading(true)
     try {
       const response = await fetch('/api/files')
       const data = await response.json()
       if (Array.isArray(data)) {
-        setFiles(data)
+        // Transform the data to include image information
+        const filesWithUrls = data.map(file => ({
+          ...file,
+          isImage: file.Key.match(/\.(jpg|jpeg|png|gif|webp)$/i) !== null
+        }))
+        setFiles(filesWithUrls)
       }
     } catch (error) {
       console.error('Error fetching files:', error)
+      toast.error('Failed to fetch files')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -105,30 +115,32 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white p-8">
+    <main className="min-h-screen bg-black text-white p-8">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-purple-500 bg-clip-text text-transparent">
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
             File Manager
           </h1>
           <div className="flex gap-2">
             <button
               onClick={() => setShowConfigModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+              className="group relative px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 hover:border-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
             >
-              Edit Config
+              <span className="relative z-10">Edit Config</span>
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
             </button>
             <button
               onClick={handleClearCache}
-              className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors duration-200 focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+              className="group relative px-4 py-2 bg-gray-900 text-white rounded-lg border border-gray-700 hover:border-gray-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-yellow-500/50"
             >
-              Clear Cache
+              <span className="relative z-10">Clear Cache</span>
+              <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-yellow-500/20 to-orange-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
             </button>
           </div>
         </div>
         
         {showConfigModal && (
-          <div className="fixed inset-0 z-50">
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
             <R2ConfigModal 
               onConfigSave={handleConfigSave}
               initialConfig={r2Config || undefined}
@@ -143,12 +155,21 @@ export default function Home() {
           uploadProgress={uploadProgress}
         />
         
-        <FileList 
-          files={files}
-          onDelete={handleDelete}
-        />
+        {loading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500" />
+          </div>
+        ) : (
+          <FileList 
+            files={files}
+            onDelete={handleDelete}
+          />
+        )}
       </div>
-      <ToastContainer theme="dark" />
+      <ToastContainer 
+        theme="dark"
+        toastClassName="bg-gray-900 text-white border border-gray-800"
+      />
     </main>
   )
 }

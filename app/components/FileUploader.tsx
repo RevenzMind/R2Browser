@@ -12,6 +12,16 @@ interface FileUploaderProps {
 export default function FileUploader({ onUploadSuccess, uploading, uploadProgress }: FileUploaderProps) {
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.length) return
+    
+    const file = e.target.files[0]
+    const maxSize = 50 * 1024 * 1024 // 50MB limit
+    
+    if (file.size > maxSize) {
+      toast.error('File size exceeds 50MB limit', {
+        position: 'bottom-right'
+      })
+      return
+    }
 
     try {
       const formData = new FormData()
@@ -53,7 +63,7 @@ export default function FileUploader({ onUploadSuccess, uploading, uploadProgres
       }
     } catch (error) {
       console.error('Error uploading file:', error)
-      toast.error('Failed to upload file', {
+      toast.error(error instanceof Error ? error.message : 'Failed to upload file', {
         position: 'bottom-right'
       })
     }
